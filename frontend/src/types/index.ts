@@ -314,7 +314,7 @@ export interface LLMConfig {
   base_url: string;
   price_per_million_tokens: number;
   is_active: boolean;
-  config_type: 'chat' | 'embedding';
+  config_type: 'resume_parse' | 'score_report' | 'interview_generate' | 'chat' | 'embedding';
   created_at: string;
   updated_at: string;
 }
@@ -327,7 +327,7 @@ export interface LLMConfigFormData {
   base_url: string;
   price_per_million_tokens: number;
   is_active: boolean;
-  config_type?: string;
+  config_type?: 'resume_parse' | 'score_report' | 'interview_generate' | 'chat' | 'embedding';
 }
 
 export interface TokenUsageByFunction {

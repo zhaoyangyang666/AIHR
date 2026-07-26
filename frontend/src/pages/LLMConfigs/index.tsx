@@ -15,8 +15,11 @@ const providerOptions = [
 ];
 
 const configTypeOptions = [
-  { label: '对话模型', value: 'chat' },
+  { label: '简历解析模型', value: 'resume_parse' },
+  { label: '初筛报告模型', value: 'score_report' },
+  { label: '面试题生成模型', value: 'interview_generate' },
   { label: '嵌入模型', value: 'embedding' },
+  { label: '对话模型(历史)', value: 'chat' },
 ];
 
 const LLMConfigs: React.FC = () => {
@@ -34,6 +37,7 @@ const LLMConfigs: React.FC = () => {
   } | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
   const [usageRange, setUsageRange] = useState('today');
+  const [filterType, setFilterType] = useState<string | undefined>(undefined);
 
   const loadData = async () => {
     setLoading(true);
@@ -54,7 +58,7 @@ const LLMConfigs: React.FC = () => {
     setEditingConfig(null);
     form.resetFields();
     form.setFieldValue('is_active', true);
-    form.setFieldValue('config_type', 'chat');
+    form.setFieldValue('config_type', 'resume_parse');
     form.setFieldValue('price_per_million_tokens', 10);
     setModalOpen(true);
   };
@@ -68,7 +72,7 @@ const LLMConfigs: React.FC = () => {
       base_url: record.base_url,
       price_per_million_tokens: record.price_per_million_tokens,
       is_active: record.is_active,
-      config_type: record.config_type || 'chat',
+      config_type: record.config_type || 'resume_parse',
     });
     setModalOpen(true);
   };
@@ -142,10 +146,18 @@ const LLMConfigs: React.FC = () => {
       title: '类型',
       dataIndex: 'config_type',
       key: 'config_type',
-      width: 100,
-      render: (v: string) => v === 'embedding'
-        ? <Tag color="green">嵌入模型</Tag>
-        : <Tag color="blue">对话模型</Tag>,
+      width: 120,
+      render: (v: string) => {
+        const typeMap: Record<string, { label: string; color: string }> = {
+          resume_parse: { label: '简历解析模型', color: 'blue' },
+          score_report: { label: '初筛报告模型', color: 'orange' },
+          interview_generate: { label: '面试题生成模型', color: 'purple' },
+          embedding: { label: '嵌入模型', color: 'green' },
+          chat: { label: '对话模型(历史)', color: 'default' },
+        };
+        const item = typeMap[v] || { label: v, color: 'default' };
+        return <Tag color={item.color}>{item.label}</Tag>;
+      },
     },
     { title: 'Base URL', dataIndex: 'base_url', key: 'base_url', width: 250, ellipsis: true },
     { title: '价格(百万Token)', dataIndex: 'price_per_million_tokens', key: 'price_per_million_tokens', width: 130, render: (v: number) => `¥${v.toFixed(2)}` },
@@ -176,12 +188,23 @@ const LLMConfigs: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>大模型管理</Title>
         <Space>
+          <Select
+            placeholder="全部类型"
+            allowClear
+            style={{ width: 160 }}
+            value={filterType}
+            onChange={(value) => setFilterType(value)}
+            options={[
+              { label: '全部类型', value: 'all' },
+              ...configTypeOptions,
+            ]}
+          />
           <Button icon={<LineChartOutlined />} onClick={handleShowUsage}>Token统计</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新建配置</Button>
         </Space>
       </div>
       <Card>
-        <Table columns={columns} dataSource={configs} rowKey="id" loading={loading} pagination={false} />
+        <Table columns={columns} dataSource={filterType && filterType !== 'all' ? configs.filter(c => c.config_type === filterType) : configs} rowKey="id" loading={loading} pagination={false} />
       </Card>
 
       <Modal title={editingConfig ? '编辑配置' : '新建配置'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} width={500} okText="保存" cancelText="取消">

@@ -100,7 +100,9 @@ def trigger_score(
             raise HTTPException(status_code=400, detail="请先在提示词管理中创建打分提示词")
         prompt_id = prompt.id
     if not llm_config_id:
-        llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
+        llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "score_report").order_by(LLMConfig.id).first()
+        if not llm_config:
+            llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
         if not llm_config:
             raise HTTPException(status_code=400, detail="请先在模型管理中配置大模型")
         llm_config_id = llm_config.id
@@ -160,7 +162,9 @@ def rescore_resume(
             raise HTTPException(status_code=400, detail="请先在提示词管理中创建打分提示词")
         prompt_id = prompt.id
     if not llm_config_id:
-        llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
+        llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "score_report").order_by(LLMConfig.id).first()
+        if not llm_config:
+            llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
         if not llm_config:
             raise HTTPException(status_code=400, detail="请先在模型管理中配置大模型")
         llm_config_id = llm_config.id
