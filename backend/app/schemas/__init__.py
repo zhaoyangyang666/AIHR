@@ -249,6 +249,7 @@ class LLMConfigItem(BaseModel):
     base_url: str
     price_per_million_tokens: Optional[float]
     is_active: bool
+    config_type: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -261,6 +262,7 @@ class LLMConfigCreate(BaseModel):
     base_url: str
     price_per_million_tokens: Optional[float] = None
     is_active: bool = True
+    config_type: Optional[str] = "chat"
 
 
 class TokenUsageItem(BaseModel):

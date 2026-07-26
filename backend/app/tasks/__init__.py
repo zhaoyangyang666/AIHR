@@ -13,6 +13,23 @@ from app.core.security import decrypt_api_key
 logger = logging.getLogger(__name__)
 
 
+def get_active_llm_config(db, config_type: str):
+    """
+    获取指定类型的 active LLM 配置。
+    如果 config_type 是 resume_parse/score_report/interview_generate 之一且找不到对应配置，
+    则降级查询 "chat" 类型的 active 配置。
+    返回找到的配置或 None
+    """
+    llm_config = db.query(LLMConfig).filter(
+        LLMConfig.is_active == True, LLMConfig.config_type == config_type
+    ).order_by(LLMConfig.id).first()
+    if not llm_config and config_type in ("resume_parse", "score_report", "interview_generate"):
+        llm_config = db.query(LLMConfig).filter(
+            LLMConfig.is_active == True, LLMConfig.config_type == "chat"
+        ).order_by(LLMConfig.id).first()
+    return llm_config
+
+
 def extract_text_from_file(file_path: Path) -> str:
     """从 PDF/DOC/DOCX 文件中提取文本"""
     text = ""
@@ -43,7 +60,7 @@ def parse_text_with_llm(text: str, db_session=None, prompt_id: int = None, llm_c
             llm_config = db.query(LLMConfig).filter(LLMConfig.id == llm_config_id).first()
         else:
             prompt = db.query(Prompt).filter(Prompt.name == "简历解析提示词-默认", Prompt.type == "parse").first()
-            llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
+            llm_config = get_active_llm_config(db, "resume_parse")
 
         if not prompt:
             raise ValueError("解析提示词未配置，请先在提示词管理中创建")
