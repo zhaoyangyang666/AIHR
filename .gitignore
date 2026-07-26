@@ -76,6 +76,3 @@ coverage/
 
 # Deployment temp
 .deploy_tmp/
-
-# Test output files
-面试题下载测试.pdf
