@@ -13,16 +13,16 @@ from app.models import LLMConfig, TokenUsageLog
 router = APIRouter(prefix="/llm-configs", tags=["大模型配置"])
 
 
-def _ensure_single_active_embedding(db: Session, exclude_id: int = None):
-    """确保只有一个 active 的 embedding 配置"""
-    active_embeddings = db.query(LLMConfig).filter(
-        LLMConfig.config_type == "embedding",
+def _ensure_single_active(db: Session, config_type: str, exclude_id: int = None):
+    """确保指定类型只有一个 active 配置"""
+    active_configs = db.query(LLMConfig).filter(
+        LLMConfig.config_type == config_type,
         LLMConfig.is_active == True,
     ).all()
-    for emb in active_embeddings:
-        if exclude_id and emb.id == exclude_id:
+    for cfg in active_configs:
+        if exclude_id and cfg.id == exclude_id:
             continue
-        emb.is_active = False
+        cfg.is_active = False
     db.commit()
 
 
@@ -36,13 +36,16 @@ def list_llm_configs(current_user: dict = Depends(get_current_user), db: Session
 def create_llm_config(request: dict = Body(...), current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     existing = db.query(LLMConfig).filter(LLMConfig.name == request["name"]).first()
     if existing:
+        old_config_type = existing.config_type
         existing.api_key_encrypted = encrypt_api_key(request["api_key"])
         existing.base_url = request["base_url"]
         existing.price_per_million_tokens = request.get("price_per_million_tokens")
         existing.is_active = request.get("is_active", True)
         existing.config_type = request.get("config_type", "chat")
-        if existing.config_type == "embedding" and existing.is_active:
-            _ensure_single_active_embedding(db, exclude_id=existing.id)
+        if existing.is_active:
+            if old_config_type != existing.config_type:
+                _ensure_single_active(db, old_config_type)
+            _ensure_single_active(db, existing.config_type, exclude_id=existing.id)
         db.commit()
         db.refresh(existing)
         return ApiResponse(data=existing.to_dict())
@@ -50,9 +53,8 @@ def create_llm_config(request: dict = Body(...), current_user: dict = Depends(ge
     config_type = request.get("config_type", "chat")
     is_active = request.get("is_active", True)
 
-    # embedding 类型只允许一个 active
-    if config_type == "embedding" and is_active:
-        _ensure_single_active_embedding(db)
+    if is_active:
+        _ensure_single_active(db, config_type)
 
     config = LLMConfig(
         name=request["name"], provider=request["provider"], model_name=request["model_name"],
@@ -71,6 +73,7 @@ def update_llm_config(config_id: int, request: dict = Body(...), current_user: d
     config = db.query(LLMConfig).filter(LLMConfig.id == config_id).first()
     if not config:
         raise HTTPException(status_code=404, detail="配置不存在")
+    old_config_type = config.config_type
     config.name = request["name"]
     config.provider = request["provider"]
     config.model_name = request["model_name"]
@@ -81,9 +84,10 @@ def update_llm_config(config_id: int, request: dict = Body(...), current_user: d
     config.is_active = request.get("is_active", True)
     config.config_type = request.get("config_type", "chat")
 
-    # embedding 类型只允许一个 active
-    if config.config_type == "embedding" and config.is_active:
-        _ensure_single_active_embedding(db, exclude_id=config.id)
+    if config.is_active:
+        if old_config_type != config.config_type:
+            _ensure_single_active(db, old_config_type)
+        _ensure_single_active(db, config.config_type, exclude_id=config.id)
 
     db.commit()
     db.refresh(config)

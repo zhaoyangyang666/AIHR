@@ -81,7 +81,9 @@ def generate_interview(
             raise HTTPException(status_code=400, detail="请先在提示词管理中创建面试题提示词")
         prompt_id = prompt.id
     if not llm_config_id:
-        llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
+        llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "interview_generate").order_by(LLMConfig.id).first()
+        if not llm_config:
+            llm_config = db.query(LLMConfig).filter(LLMConfig.is_active == True, LLMConfig.config_type == "chat").order_by(LLMConfig.id).first()
         if not llm_config:
             raise HTTPException(status_code=400, detail="请先在模型管理中配置大模型")
         llm_config_id = llm_config.id
