@@ -1,304 +1,308 @@
-# HR 智能招聘平台
+# AIHR — AI-Powered Recruitment Platform
 
-基于 AI 的智能招聘管理系统，支持简历解析、智能初筛、面试题生成、AI 语义搜索等功能。支持云端 API 和本地 Ollama 两种 AI 接入方式。
+> **Language / 语言**: English | [简体中文](./README_zh.md)
 
-## 技术栈
+An AI-driven intelligent recruitment management system supporting resume parsing, smart screening, interview question generation, and AI semantic search. Supports both cloud API and local Ollama AI integration.
 
-### 后端
-- **框架**：FastAPI + Uvicorn
-- **数据库**：SQLite + SQLAlchemy
-- **异步任务**：Celery + Redis
-- **AI 集成**：OpenAI 兼容 API（支持硅基流动、OpenAI、本地 Ollama 等）
-- **向量搜索**：NumPy 余弦相似度 + JSON 文件持久化（轻量级自实现方案）
-- **文件处理**：pdfplumber、python-docx、reportlab
+For a high-level overview of the system design, see [AIHR Technical Architecture](./AIHR_技术架构图.md) and the [simplified architecture diagram](./AIHR_技术架构图_简版.png).
 
-### 前端
-- **框架**：React 18 + TypeScript
-- **UI 组件**：Ant Design 5
-- **路由**：React Router 6
-- **状态管理**：Zustand
-- **HTTP 客户端**：Axios
-- **构建工具**：Vite
+## Tech Stack
 
-## 功能模块
+### Backend
+- **Framework**: FastAPI + Uvicorn
+- **Database**: SQLite + SQLAlchemy
+- **Async Tasks**: Celery + Redis
+- **AI Integration**: OpenAI-compatible API (supports SiliconFlow, OpenAI, local Ollama, etc.)
+- **Vector Search**: NumPy cosine similarity + JSON file persistence (lightweight in-house implementation)
+- **File Processing**: pdfplumber, python-docx, reportlab
 
-| 模块 | 说明 |
-|------|------|
-| 数据概览 | 招聘数据统计看板 |
-| 职位管理 | 职位发布、编辑、状态管理 |
-| 简历管理 | 简历导入（PDF/DOCX）、AI 解析、状态流转 |
-| AI 搜索简历 | 基于 RAG 的语义搜索，自然语言查找候选人 |
-| 匹配中心 | 简历初筛评分、面试题生成 |
-| 面试题管理 | 面试题查看、PDF/DOCX 导出 |
-| 提示词管理 | Prompt 模板版本管理 |
-| 大模型管理 | LLM 配置（对话模型 + 嵌入模型）、API Key 加密存储、Token 用量统计 |
+### Frontend
+- **Framework**: React 18 + TypeScript
+- **UI Components**: Ant Design 5
+- **Routing**: React Router 6
+- **State Management**: Zustand
+- **HTTP Client**: Axios
+- **Build Tool**: Vite
 
-## AI 搜索简历（RAG）
+## Feature Modules
 
-独立的语义搜索功能，通过 RAG（检索增强生成）方式实现简历智能检索。
+| Module | Description |
+|--------|-------------|
+| Dashboard | Recruitment data statistics dashboard |
+| Job Management | Job posting, editing, status management |
+| Resume Management | Resume import (PDF/DOCX), AI parsing, status flow |
+| AI Resume Search | RAG-based semantic search, find candidates via natural language |
+| Matching Center | Resume screening & scoring, interview question generation |
+| Interview Questions | Question viewing, PDF/DOCX export |
+| Prompt Management | Prompt template version management |
+| LLM Management | LLM configuration (chat model + embedding model), API Key encrypted storage, Token usage tracking |
 
-### 技术方案
-- **Embedding 模型**：通过《大模型管理》菜单配置嵌入模型（支持硅基流动、OpenAI、本地 Ollama 等任意 OpenAI 兼容 API）
-- **向量存储**：NumPy 余弦相似度 + JSON 文件持久化
-- **未使用向量数据库**（ChromaDB 因 Python 3.14 兼容性问题已弃用）
-- **未使用 LangChain 框架**（直接调用 OpenAI 兼容 API）
+## AI Resume Search (RAG)
 
-### 配置方式
-Embedding 模型支持两种配置方式，优先级从高到低：
-1. **数据库配置（推荐）**：在《大模型管理》页面新建"嵌入模型"类型的配置，设置 API Key、Base URL、模型名称，启用后自动生效
-2. **环境变量 Fallback**：若数据库中无 active 的嵌入模型配置，则使用 `.env` 中的 `EMBEDDING_*` 配置
+A standalone semantic search feature that implements intelligent resume retrieval via RAG (Retrieval-Augmented Generation).
 
-### 工作流程
-1. **构建索引**：将所有已解析成功的简历结构化数据拼接为自然语言文本，调用 Embedding API 生成向量，持久化到本地 JSON 文件
-2. **语义搜索**：用户输入自然语言查询 → 生成查询向量 → 与所有简历向量计算余弦相似度 → 返回 Top-K 匹配结果（含匹配度分数）
-3. **自动向量化**：简历解析成功后自动调用向量化存储，无需手动操作
+### Technical Approach
+- **Embedding Model**: Configure the embedding model via the "LLM Management" menu (supports SiliconFlow, OpenAI, local Ollama, or any OpenAI-compatible API)
+- **Vector Storage**: NumPy cosine similarity + JSON file persistence
+- **No vector database used** (ChromaDB was deprecated due to Python 3.14 compatibility issues)
+- **No LangChain framework** (calls OpenAI-compatible API directly)
 
-## 快速开始
+### Configuration
+The Embedding model supports two configuration methods, in order of priority:
+1. **Database configuration (recommended)**: Create an "embedding model" type config on the "LLM Management" page, set API Key, Base URL, and model name; takes effect automatically once enabled
+2. **Environment variable fallback**: If no active embedding config exists in the database, uses `EMBEDDING_*` settings from `.env`
 
-### 环境要求
-- Python 3.10+（已验证通过 Python 3.14）
-- Node.js 18+（已验证通过 Node.js 24）
-- Redis（Celery 异步任务所需）
-- Ollama（本地 AI 模式所需，可选）
+### Workflow
+1. **Build Index**: Concatenate structured data of all successfully parsed resumes into natural-language text, call the Embedding API to generate vectors, and persist to a local JSON file
+2. **Semantic Search**: User enters a natural-language query → generate query vector → compute cosine similarity against all resume vectors → return Top-K matches (with match scores)
+3. **Auto Vectorization**: Automatically calls vector storage after a resume is successfully parsed — no manual action required
 
-### 1. 安装 Redis
+## Quick Start
 
-**Windows（推荐 winget）：**
+### Requirements
+- Python 3.10+ (verified with Python 3.14)
+- Node.js 18+ (verified with Node.js 24)
+- Redis (required for Celery async tasks)
+- Ollama (optional, for local AI mode)
+
+### 1. Install Redis
+
+**Windows (winget recommended):**
 ```bash
 winget install taizod1024.redis-windows-fork
 ```
 
-**其他方式：** 参见 [Redis Windows 移植版](https://github.com/redis-windows/redis-windows)
+**Other methods:** See [Redis Windows port](https://github.com/redis-windows/redis-windows)
 
-启动 Redis 服务：
+Start the Redis service:
 ```bash
 redis-server --port 6379
 ```
 
-### 2. 安装 Ollama（本地 AI 模式）
+### 2. Install Ollama (Local AI Mode)
 
-如需使用本地 AI 功能（无需云端 API 费用），安装 Ollama 并拉取模型：
+To use local AI features (no cloud API costs), install Ollama and pull models:
 
 ```bash
-# 安装 Ollama：https://ollama.com/download
-# 拉取对话模型（推荐 qwen2.5:3b，适合 8GB 内存）
+# Install Ollama: https://ollama.com/download
+# Pull the chat model (qwen2.5:3b recommended for 8GB RAM)
 ollama pull qwen2.5:3b
-# 拉取嵌入模型
+# Pull the embedding model
 ollama pull qwen3-embedding:8b
 ```
 
-> **内存建议**：8GB 内存推荐使用 3B 对话模型 + 8B 嵌入模型；16GB+ 内存可使用 7B 对话模型。
+> **Memory recommendation**: 8GB RAM — 3B chat model + 8B embedding model; 16GB+ RAM — 7B chat model.
 
-### 3. 后端启动
+### 3. Start the Backend
 
 ```bash
 cd backend
 
-# 安装依赖
+# Install dependencies
 pip install -r requirements.txt
 
-# 生成密钥并配置环境变量（两种任选其一）
-# 方式 A：使用脚本（推荐）
+# Generate keys and configure environment variables (choose one)
+# Option A: use the script (recommended)
 generate_keys.bat
 
-# 方式 B：手动生成
+# Option B: generate manually
 python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))" >> .env
 python -c "import secrets; print('ENCRYPTION_KEY=' + secrets.token_urlsafe(32))" >> .env
 
-# 编辑 .env 配置 Embedding 模型等参数（详见下方环境变量说明）
+# Edit .env to configure Embedding model and other params (see environment variables below)
 
-# 启动 API 服务（使用 python -m 方式，不要用 uvicorn 直接调用）
+# Start the API service (use python -m, do not call uvicorn directly)
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-# 启动 Celery Worker（新终端）
+# Start the Celery Worker (new terminal)
 celery -A app.tasks worker --loglevel=info --pool=solo
 ```
 
-> **注意**：Celery 启动命令使用 `-A app.tasks`（而非 `-A app.core.celery_app`），以确保异步任务正确注册。
+> **Note**: The Celery startup command uses `-A app.tasks` (not `-A app.core.celery_app`) to ensure async tasks are registered correctly.
 >
-> **首次使用**：系统不会自动创建管理员账户。后端首次启动时会自动创建数据库表和 3 条默认提示词。创建 admin 用户：
+> **First run**: The system does not auto-create an admin account. On first startup the backend will auto-create database tables and 3 default prompts. To create an admin user:
 > ```bash
-> python -c "from app.db.session import SessionLocal; from app.models import User; from app.core.security import get_password_hash; db = SessionLocal(); u = User(username='admin', password_hash=get_password_hash('你的强密码')); db.add(u); db.commit()"
+> python -c "from app.db.session import SessionLocal; from app.models import User; from app.core.security import get_password_hash; db = SessionLocal(); u = User(username='admin', password_hash=get_password_hash('your-strong-password')); db.add(u); db.commit()"
 > ```
 
-### 4. 前端启动
+### 4. Start the Frontend
 
 ```bash
 cd frontend
 
-# 安装依赖
+# Install dependencies
 npm install
 
-# 启动开发服务器
+# Start the dev server
 npm run dev
 ```
 
-访问 http://localhost:5173 即可使用。
+Open http://localhost:5173 to use the app.
 
-### 一键启动（Windows）
+### One-Click Start (Windows)
 
-双击 `backend/start_all.bat` 即可按顺序启动 Redis（检查）、后端 API、Celery Worker 和前端。脚本会自动检测 `.env` 是否存在且密钥已配置。
+Double-click `backend/start_all.bat` to start Redis (with check), backend API, Celery Worker, and frontend in order. The script auto-detects whether `.env` exists and keys are configured.
 
-### 环境变量配置
+### Environment Variables
 
-后端 `.env` 主要配置项：
+Main backend `.env` settings:
 
 ```env
-# JWT 密钥（必填，使用上述命令生成）
+# JWT secret (required, generate with the command above)
 SECRET_KEY=
 
-# Token 过期时间（分钟）
+# Token expiration (minutes)
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
-# 数据库
+# Database
 DATABASE_URL=sqlite:///./hr_ai.db
 
 # Celery
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/1
 
-# API Key 加密密钥（必填，使用上述命令生成）
+# API Key encryption key (required, generate with the command above)
 ENCRYPTION_KEY=
 
-# Embedding（AI 搜索，数据库配置后可省略）
-# 云端 API 示例：
+# Embedding (AI search; can be omitted once configured in the database)
+# Cloud API example:
 EMBEDDING_API_KEY=your-api-key
 EMBEDDING_BASE_URL=https://api.siliconflow.cn/v1
 EMBEDDING_MODEL=Qwen/Qwen3-VL-Embedding-8B
 
-# 本地 Ollama 示例：
+# Local Ollama example:
 # EMBEDDING_API_KEY=ollama
 # EMBEDDING_BASE_URL=http://localhost:11434/v1
 # EMBEDDING_MODEL=qwen3-embedding:8b
 ```
 
-## 大模型配置说明
+## LLM Configuration
 
-系统支持两种 AI 接入方式，可在《大模型管理》页面灵活切换：
+The system supports two AI integration methods, switchable on the "LLM Management" page:
 
-### 云端 API
-- **提供商**：硅基流动、OpenAI、DeepSeek、智谱等任意 OpenAI 兼容 API
-- **优点**：响应快、模型能力强
-- **缺点**：需要付费、依赖网络
+### Cloud API
+- **Providers**: SiliconFlow, OpenAI, DeepSeek, Zhipu, or any OpenAI-compatible API
+- **Pros**: Fast response, strong model capabilities
+- **Cons**: Paid, depends on network
 
-### 本地 Ollama
-- **配置方式**：Base URL 填 `http://localhost:11434/v1`，API Key 填 `ollama`（占位符）
-- **优点**：免费、数据不出本机、离线可用
-- **缺点**：响应较慢（取决于硬件）、需要较多内存
-- **推荐模型**：
-  - 对话模型：`qwen2.5:3b`（8GB 内存）或 `qwen2.5:7b`（16GB+ 内存）
-  - 嵌入模型：`qwen3-embedding:8b`
+### Local Ollama
+- **Configuration**: Set Base URL to `http://localhost:11434/v1` and API Key to `ollama` (placeholder)
+- **Pros**: Free, data stays on your machine, works offline
+- **Cons**: Slower response (hardware-dependent), requires more memory
+- **Recommended models**:
+  - Chat model: `qwen2.5:3b` (8GB RAM) or `qwen2.5:7b` (16GB+ RAM)
+  - Embedding model: `qwen3-embedding:8b`
 
-## API 端点
+## API Endpoints
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/v1/auth/login` | 用户登录 |
-| GET | `/api/v1/dashboard/stats` | 数据概览统计 |
-| GET/POST/PUT/DELETE | `/api/v1/jobs` | 职位管理 |
-| GET/POST | `/api/v1/resumes` | 简历管理 |
-| POST | `/api/v1/resumes/import` | 简历导入 |
-| POST | `/api/v1/ai-search` | AI 语义搜索 |
-| POST | `/api/v1/ai-search/index` | 构建搜索索引 |
-| POST | `/api/v1/matching/{id}/score` | 简历评分 |
-| POST | `/api/v1/interviews/{id}/generate` | 生成面试题 |
-| GET | `/api/v1/interviews/{id}/download/pdf` | 面试题 PDF 下载 |
-| GET | `/api/v1/interviews/{id}/download/docx` | 面试题 DOCX 下载 |
-| GET/POST/PUT | `/api/v1/prompts` | 提示词管理 |
-| GET/POST/PUT/DELETE | `/api/v1/llm-configs` | 大模型配置管理 |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/auth/login` | User login |
+| GET | `/api/v1/dashboard/stats` | Dashboard statistics |
+| GET/POST/PUT/DELETE | `/api/v1/jobs` | Job management |
+| GET/POST | `/api/v1/resumes` | Resume management |
+| POST | `/api/v1/resumes/import` | Resume import |
+| POST | `/api/v1/ai-search` | AI semantic search |
+| POST | `/api/v1/ai-search/index` | Build search index |
+| POST | `/api/v1/matching/{id}/score` | Resume scoring |
+| POST | `/api/v1/interviews/{id}/generate` | Generate interview questions |
+| GET | `/api/v1/interviews/{id}/download/pdf` | Download questions as PDF |
+| GET | `/api/v1/interviews/{id}/download/docx` | Download questions as DOCX |
+| GET/POST/PUT | `/api/v1/prompts` | Prompt management |
+| GET/POST/PUT/DELETE | `/api/v1/llm-configs` | LLM configuration management |
 
-完整 API 文档：启动后端后访问 http://localhost:8000/docs
+Full API docs: after starting the backend, visit http://localhost:8000/docs
 
-## 项目结构
+## Project Structure
 
 ```
 AIHR/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                # API 路由
-│   │   │   ├── ai_search.py    # AI 搜索接口
-│   │   │   ├── apply.py        # 应聘接口
-│   │   │   ├── auth.py         # 认证接口
-│   │   │   ├── dashboard.py    # 数据概览接口
-│   │   │   ├── interviews.py   # 面试题接口
-│   │   │   ├── jobs.py         # 职位接口
-│   │   │   ├── llm_configs.py  # 大模型配置接口
-│   │   │   ├── matching.py     # 匹配评分接口
-│   │   │   ├── prompts.py      # 提示词接口
-│   │   │   └── resumes.py      # 简历接口
-│   │   ├── core/               # 核心配置
-│   │   │   ├── celery_app.py   # Celery 配置
-│   │   │   ├── config.py       # 应用配置（含启动校验）
-│   │   │   └── security.py     # JWT / API Key 加密
-│   │   ├── db/                 # 数据库会话
-│   │   ├── models/             # SQLAlchemy 模型
-│   │   ├── schemas/            # Pydantic Schema
+│   │   ├── api/                # API routes
+│   │   │   ├── ai_search.py    # AI search endpoints
+│   │   │   ├── apply.py        # Application endpoints
+│   │   │   ├── auth.py         # Auth endpoints
+│   │   │   ├── dashboard.py    # Dashboard endpoints
+│   │   │   ├── interviews.py   # Interview question endpoints
+│   │   │   ├── jobs.py         # Job endpoints
+│   │   │   ├── llm_configs.py  # LLM config endpoints
+│   │   │   ├── matching.py     # Matching/scoring endpoints
+│   │   │   ├── prompts.py      # Prompt endpoints
+│   │   │   └── resumes.py      # Resume endpoints
+│   │   ├── core/               # Core configuration
+│   │   │   ├── celery_app.py   # Celery configuration
+│   │   │   ├── config.py       # App config (with startup validation)
+│   │   │   └── security.py     # JWT / API Key encryption
+│   │   ├── db/                 # Database session
+│   │   ├── models/             # SQLAlchemy models
+│   │   ├── schemas/            # Pydantic schemas
 │   │   ├── services/
-│   │   │   └── vector_store.py # 向量存储服务（NumPy 实现）
-│   │   └── tasks/              # Celery 异步任务
+│   │   │   └── vector_store.py # Vector store service (NumPy-based)
+│   │   └── tasks/              # Celery async tasks
 │   │       └── __init__.py     # parse_resume / score_resume / generate_interview
-│   ├── chroma_db/              # 向量数据持久化目录（JSON）
-│   ├── downloads/              # 导出文件目录
-│   ├── uploads/                # 上传文件目录
-│   ├── .env                    # 环境变量配置
-│   ├── .env.example            # 环境变量模板
-│   ├── generate_keys.bat       # 密钥生成脚本
-│   ├── start_all.bat           # 一键启动脚本
+│   ├── chroma_db/              # Vector persistence directory (JSON)
+│   ├── downloads/              # Exported files directory
+│   ├── uploads/                # Uploaded files directory
+│   ├── .env                    # Environment variables
+│   ├── .env.example            # Environment variable template
+│   ├── generate_keys.bat       # Key generation script
+│   ├── start_all.bat           # One-click startup script
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── api/                # API 调用层
-│   │   ├── components/         # 公共组件
-│   │   ├── pages/              # 页面组件
-│   │   │   ├── AiSearch/           # AI 搜索简历
-│   │   │   ├── Apply/              # 应聘管理
-│   │   │   ├── Dashboard/          # 数据概览
-│   │   │   ├── InterviewQuestions/ # 面试题管理
-│   │   │   ├── Jobs/               # 职位管理
-│   │   │   ├── LLMConfigs/         # 大模型管理
-│   │   │   ├── Login/              # 登录
-│   │   │   ├── MatchingCenter/     # 匹配中心
-│   │   │   ├── Prompts/            # 提示词管理
-│   │   │   ├── ResumeDetail/       # 简历详情
-│   │   │   ├── ResumeImport/       # 简历导入
-│   │   │   └── Resumes/            # 简历管理
-│   │   ├── router/             # 路由配置
-│   │   ├── stores/             # 状态管理（Zustand）
-│   │   └── types/              # TypeScript 类型
+│   │   ├── api/                # API call layer
+│   │   ├── components/         # Shared components
+│   │   ├── pages/              # Page components
+│   │   │   ├── AiSearch/           # AI resume search
+│   │   │   ├── Apply/              # Application management
+│   │   │   ├── Dashboard/          # Dashboard
+│   │   │   ├── InterviewQuestions/ # Interview question management
+│   │   │   ├── Jobs/               # Job management
+│   │   │   ├── LLMConfigs/         # LLM management
+│   │   │   ├── Login/              # Login
+│   │   │   ├── MatchingCenter/     # Matching center
+│   │   │   ├── Prompts/            # Prompt management
+│   │   │   ├── ResumeDetail/       # Resume detail
+│   │   │   ├── ResumeImport/       # Resume import
+│   │   │   └── Resumes/            # Resume management
+│   │   ├── router/             # Routing
+│   │   ├── stores/             # State management (Zustand)
+│   │   └── types/              # TypeScript types
 │   └── package.json
 └── README.md
 ```
 
-## 安全说明
+## Security Notes
 
-本项目在生产部署前请注意以下安全事项：
+Before deploying to production, note the following:
 
-- **`SECRET_KEY`** 和 **`ENCRYPTION_KEY`** 为必填项，无默认值。未配置时应用将拒绝启动并提示明确的中文错误信息。请使用 `secrets.token_urlsafe(32)` 生成随机密钥。
-- **管理员账户**不会自动创建，需手动通过命令行创建并设置强密码。
-- **CORS** 默认仅允许 `http://localhost:5173`（前端开发服务器），生产环境请修改为实际域名。
-- **用户上传的简历文件**可能包含个人敏感信息，请勿提交至版本控制（已在 `.gitignore` 中排除）。
-- **数据库文件**（`.db`）和 **Redis 快照**（`.rdb`）同样在 `.gitignore` 中排除。
+- **`SECRET_KEY`** and **`ENCRYPTION_KEY`** are required with no defaults. The app will refuse to start with a clear error message if not configured. Generate random keys with `secrets.token_urlsafe(32)`.
+- **Admin account** is not auto-created; create it manually via the command line with a strong password.
+- **CORS** only allows `http://localhost:5173` (frontend dev server) by default. Update to your actual domain in production.
+- **Uploaded resume files** may contain personal sensitive information — do not commit to version control (excluded in `.gitignore`).
+- **Database files** (`.db`) and **Redis snapshots** (`.rdb`) are also excluded in `.gitignore`.
 
-## 启动注意事项
+## Troubleshooting
 
-### 常见问题
+### Common Issues
 
-| 问题 | 原因 | 解决方法 |
-|------|------|----------|
-| 启动时报 `RuntimeError: SECRET_KEY is not set` | `.env` 中密钥为空或未配置 | 运行 `generate_keys.bat` 或在 `.env` 中手动填写 |
-| `uvicorn: command not found` | uvicorn 未加入 PATH | 使用 `python -m uvicorn` 替代 |
-| 前端 404 加载 favicon | `vite.svg` 文件不存在 | 已移除该引用 |
-| 登录后页面空白 | 后端未启动或端口不一致 | 确认后端运行在 8000 端口，前端 dev server 已配置代理 |
-| Celery 任务不执行 | Celery Worker 未启动 | 在新终端运行 `celery -A app.tasks worker --loglevel=info --pool=solo` |
-| 向量搜索返回空结果 | 未配置 Embedding 模型 | 在《大模型管理》页面配置嵌入模型，或重新构建索引 |
+| Problem | Cause | Solution |
+|---------|-------|----------|
+| `RuntimeError: SECRET_KEY is not set` on startup | `.env` keys empty or not configured | Run `generate_keys.bat` or fill in `.env` manually |
+| `uvicorn: command not found` | uvicorn not in PATH | Use `python -m uvicorn` instead |
+| Frontend 404 loading favicon | `vite.svg` missing | Reference already removed |
+| Blank page after login | Backend not running or port mismatch | Confirm backend runs on port 8000 and the frontend dev server proxy is configured |
+| Celery tasks not executing | Celery Worker not started | Run `celery -A app.tasks worker --loglevel=info --pool=solo` in a new terminal |
+| Vector search returns empty results | Embedding model not configured | Configure an embedding model on the "LLM Management" page, or rebuild the index |
 
-### 全新克隆后的标准启动流程
+### Standard Startup Flow After a Fresh Clone
 
-1. `cp backend/.env.example backend/.env`（或复制后手动编辑）
-2. 运行 `generate_keys.bat` 生成 `SECRET_KEY` 和 `ENCRYPTION_KEY`
-3. 编辑 `.env` 配置 Embedding 模型（云端或本地 Ollama）
+1. `cp backend/.env.example backend/.env` (or copy and edit manually)
+2. Run `generate_keys.bat` to generate `SECRET_KEY` and `ENCRYPTION_KEY`
+3. Edit `.env` to configure the Embedding model (cloud or local Ollama)
 4. `python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
-5. 创建 admin 用户（见上方命令）
+5. Create the admin user (see command above)
 6. `cd frontend && npm run dev`
 
 ## License
